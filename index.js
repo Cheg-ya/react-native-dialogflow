@@ -4,6 +4,7 @@ import { NativeAppEventEmitter } from 'react-native';
 import { Dialogflow } from './js/Dialogflow';
 import { Dialogflow_V2 } from './js/Dialogflow_V2';
 import Voice from './js/RCTVoice';
+import rs  from 'jsrsasign';
 
 /**
  *  DIALOGFLOW V1
@@ -46,8 +47,34 @@ export default dialogflow;
  */
 var dialogflow2 = new Dialogflow_V2();
 
-dialogflow2.setConfiguration = async function (clientEmail, privateKey, languageTag, projectId) {
-    dialogflow2.accessToken = await dialogflow2.generateAccessToken(clientEmail, privateKey);
+dialogflow2.generateJWT = (options = {email: null, key: null}) => {
+    if (!options) { throw new Error('options is required'); }
+    if (!options.email) { throw new Error('options.email is required'); }
+    if (!options.key) { throw new Error('options.key is required'); }
+
+
+    var iat = Math.floor(new Date().getTime() / 1000),
+        exp = iat + Math.floor((options.expiration || 60 * 60 * 1000) / 1000),
+        claims = {
+            iss: options.email,
+            scope: "https://www.googleapis.com/auth/cloud-platform",
+            aud: 'https://accounts.google.com/o/oauth2/token',
+            exp: exp,
+            iat: iat,
+            sub: null
+        };
+
+    if (options.delegationEmail) {
+        claims.sub = options.delegationEmail;
+    }
+
+    // Sign JWT && store token on client side
+    var sHeader = JSON.stringify({ alg: 'RS256', typ: 'JWT' });
+    return rs.jws.JWS.sign("RS256", sHeader, JSON.stringify(claims), options.key);
+}
+
+dialogflow2.setConfiguration = async function (jwt, languageTag, projectId) {
+    dialogflow2.accessToken = await dialogflow2.generateAccessToken(jwt);
     dialogflow2.languageTag = languageTag;
     dialogflow2.projectId = projectId;
     dialogflow2.sessionId = dialogflow2.sessionId ? dialogflow2.sessionId : dialogflow2.guid();

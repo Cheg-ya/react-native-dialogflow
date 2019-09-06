@@ -2,6 +2,7 @@
 
 import googleAuth from './googleAuth/GoogleAuth';
 import ResetContextsRequest from './ResetContextsRequest';
+
 export const DEFAULT_BASE_URL = "https://dialogflow.googleapis.com/v2beta1/projects/";
 
 export class Dialogflow_V2 {
@@ -161,10 +162,10 @@ export class Dialogflow_V2 {
             s4() + "-" + s4() + s4() + s4();
     }
 
-    async generateAccessToken(clientEmail, privateKey) {
+    async generateAccessToken(jwt) {
         let token;
         try {
-            token = await googleAuth(clientEmail, privateKey, ['https://www.googleapis.com/auth/cloud-platform']);
+            token = await googleAuth(jwt);
         } catch (e) {
             console.error("react-native-dialogflow: Authentication Error: " + e);
             throw new Error("react-native-dialogflow: Authentication Error: " + e);
